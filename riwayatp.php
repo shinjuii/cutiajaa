@@ -6,18 +6,14 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
     header('Location: login.php'); // Redirect ke halaman login jika belum login
     exit();
 }
-
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <title>Dashboard Pegawai</title>
+    <title>Riwayat Cuti</title>
     <!-- Template untuk font-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
     <!-- Css-->
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
@@ -38,19 +34,17 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
 
             <hr class="sidebar-divider my-0">
             <img alt="Profile Picture" src="images.jpg" class="profile-image"/>
-                <p ><?php echo htmlspecialchars($_SESSION['nama']); ?></p>
+            <p><?php echo htmlspecialchars($_SESSION['nama']); ?></p>
+
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item active">
+                <a class="nav-link" href="index.php">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span></a>
 
             <hr class="sidebar-divider my-0">
             <li class="nav-item active">
                 <a class="nav-link" href="#">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span></a>
-            </li>
-            
-
-            <hr class="sidebar-divider my-0">
-            <li class="nav-item active">
-                <a class="nav-link" href="riwayatp.php">
                     <i class="fas fa-bell"></i>
                     <span>Riwayat Cuti</span></a>
             </li>
@@ -123,11 +117,10 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
                                 </a>
                                <!-- Keluar dari akun --> 
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="login.php" data-toggle="modal" data-target="#logoutModal">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout
                                 </a>
-
                             </div>
                             <!-- Logout Modal-->
                             <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"aria-hidden="true">
@@ -147,7 +140,6 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
         </div>
     </div>
 </div>
-
                         </li>
 
                     </ul>
@@ -156,6 +148,7 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
                 <!-- End of Topbar -->
 
             <!-- Main Content -->
+            
             <div id="content">
                 
 
@@ -163,17 +156,12 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
                 <div class="container-fluid">
 
                     <!-- Judul -->
-                    <div class="card1">
+                    
+                    <div class="card">
                         <div class="card-body">
-                            Selamat Datang di CUTIAJA
+                            Riwayat Cuti Pegawai
                         </div>
                     </div>
-                    <h6 class="h6">
-                    Selamat datang, <?php echo htmlspecialchars($_SESSION['nama']); ?>!
-                    </h6>
-                    
-                    
-                    <a href="formulir.php" class="btn btn-primary p-2 text-white float-right"><i class="fas fa-plus mr-2"></i>Ajukan Cuti</a>
 
                     <!-- Tabel -->
                     <table class="table table-striped">
@@ -181,12 +169,10 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
                             <tr>
                             <th scope="col">No</th>
                             <th scope="col">Tanggal Diajukan</th>
-                            <th scope="col">Tanggal Mulai</th>
-                            <th scope="col">Tanggal Berakhir</th>
                             <th scope="col">Jenis Cuti</th>
-                            <th scope="col">Jumlah Cuti</th>
-                            <th scope="col">Alasan</th>
+                            <th scope="col">Tanggal Mulai</th>
                             <th scope="col">Status</th>
+                            <th colspan="3" scope="col">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -199,7 +185,8 @@ if (!isset($_SESSION['id_user'])) {
 }
 
 // Query untuk mengambil data formulir berdasarkan id_user dan status Pending
-$sql = "SELECT * FROM formulir WHERE id_user = ? AND status = 'diproses'";
+// Query untuk mengambil data formulir berdasarkan id_user dan status "disetujui" atau "ditolak"
+$sql = "SELECT * FROM formulir WHERE id_user = ? AND (status = 'disetujui' OR status = 'ditolak')";
 $stmt = $koneksi->prepare($sql);
 $stmt->bind_param("i", $_SESSION['id_user']);
 $stmt->execute();
@@ -212,25 +199,26 @@ if ($result->num_rows < 1) {
     $no = 1;
     while ($row = $result->fetch_assoc()) {
         echo "<tr>
-                <td>{$no}</td>
-                <td>{$row['tanggal_diajukan']}</td>
-                <td>{$row['tanggal_mulai']}</td>
-                <td>{$row['tanggal_selesai']}</td>
-                <td>{$row['jenis_cuti']}</td>
-                <td>{$row['jumlah_cuti']}</td>
-                <td>{$row['alasan']}</td>
-                <td>{$row['status']}</td>
-            </tr>";
+                                    <td>{$no}</td>
+                                    <td>{$row['tanggal_diajukan']}</td>
+                                    <td>{$row['jenis_cuti']}</td>
+                                    <td>{$row['tanggal_mulai']}</td>
+                                    <td>{$row['status']}</td>
+                                    <td>
+                                    <a href='detail_riwayatp.php?id_formulir={$row['id_formulir']}' class='btn'><i class='fas fa-edit mr-2'></i> Klik</a>
+                                    </td>
+                                </tr>";
         $no++;
     }
 }
 
 // Tutup statement
 $stmt->close();
+
 ?>
 
-                        </tbody>
-                        
+                       
+                    </tbody>
                         
                     </table>
 

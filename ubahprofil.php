@@ -1,23 +1,81 @@
 <?php
 session_start();
 
+// Include file koneksi
+include "../koneksi.php";
+
+// Fungsi untuk mencegah input karakter yang tidak sesuai
+function input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
 // Periksa apakah pengguna sudah login
-if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
-    header('Location: login.php'); // Redirect ke halaman login jika belum login
+if (!isset($_SESSION['id_user'])) {
+    header("Location: login.php");
     exit();
+}
+
+// Ambil data user dari session
+$id_user = $_SESSION['id_user'];
+
+// Ambil data user dari database
+$sql = "SELECT * FROM user WHERE id_user = '$id_user'";
+$result = $koneksi->query($sql);
+$user = $result->fetch_assoc();
+
+// Cek apakah form telah disubmit
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $alamat_baru = input($_POST['alamat']);
+    $no_telp_baru = input($_POST['no_telp']);
+
+    // Cek apakah file foto diunggah
+    if (!empty($_FILES['foto_profil']['name'])) {
+        $foto_profil = $_FILES['foto_profil'];
+        $target_dir = "uploads/"; // Direktori penyimpanan file
+        $target_file = $target_dir . basename($foto_profil['name']);
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+        // Validasi file
+        if (in_array($imageFileType, ['jpg', 'jpeg', 'png', 'gif'])) {
+            if (move_uploaded_file($foto_profil['tmp_name'], $target_file)) {
+                $foto_profil_path = $target_file; // Path file yang disimpan
+            } else {
+                echo "Gagal mengunggah foto.";
+                $foto_profil_path = $user['foto_profil']; // Gunakan foto sebelumnya jika gagal
+            }
+        } else {
+            echo "Hanya file JPG, JPEG, PNG, dan GIF yang diperbolehkan.";
+            $foto_profil_path = $user['foto_profil'];
+        }
+    } else {
+        $foto_profil_path = $user['foto_profil']; // Gunakan foto sebelumnya jika tidak ada upload
+    }
+
+    // Update data di database
+    $sql_update = "UPDATE user SET alamat = '$alamat_baru', no_telp = '$no_telp_baru', foto_profil = '$foto_profil_path' WHERE id_user = '$id_user'";
+    if ($koneksi->query($sql_update) === TRUE) {
+        $_SESSION['alamat'] = $alamat_baru; // Perbarui session
+        $_SESSION['no_telp'] = $no_telp_baru; // Perbarui session
+        $_SESSION['foto_profil'] = $foto_profil_path; // Perbarui session
+        header("Location: profil.php"); // Kembali ke halaman profil
+        exit();
+    } else {
+        echo "Gagal memperbarui data: " . $koneksi->error;
+    }
 }
 
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <title>Dashboard Pegawai</title>
+    <title>Profil</title>
     <!-- Template untuk font-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
     <!-- Css-->
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
@@ -30,7 +88,7 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
         <!-- Sidebar -->
         <ul class="navbar-nav bg-8AA65A sidebar " id="bg-custom">
 
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" ">
                 <div class="sidebar-brand-icon rotate-n-15">
                 </div>
                 <div class="sidebar-brand-text mx-3" id="user-head">PEGAWAI</div>
@@ -38,11 +96,11 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
 
             <hr class="sidebar-divider my-0">
             <img alt="Profile Picture" src="images.jpg" class="profile-image"/>
-                <p ><?php echo htmlspecialchars($_SESSION['nama']); ?></p>
+            <p><?php echo htmlspecialchars($_SESSION['nama']); ?></p>
 
             <hr class="sidebar-divider my-0">
             <li class="nav-item active">
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span></a>
             </li>
@@ -50,7 +108,7 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
 
             <hr class="sidebar-divider my-0">
             <li class="nav-item active">
-                <a class="nav-link" href="riwayatp.php">
+                <a class="nav-link" href="">
                     <i class="fas fa-bell"></i>
                     <span>Riwayat Cuti</span></a>
             </li>
@@ -117,37 +175,17 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
                             <!-- Kunjungi profile -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="profil.php">
+                                <a class="dropdown-item" href="#">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Profile
                                 </a>
                                <!-- Keluar dari akun --> 
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="login.php" data-toggle="modal" data-target="#logoutModal">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout
                                 </a>
-
                             </div>
-                            <!-- Logout Modal-->
-                            <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="exampleModalLabel">Yakin ingin logout?</h5>
-                                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">×</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">Pilih "Logout" jika Anda ingin keluar dari akun Anda.</div>
-                            <div class="modal-footer">
-                            <button class="btn btn-secondary text-white" type="button" data-dismiss="modal">Batal</button>
-                <a class="btn btn-primary text-white" href="logout.php">Logout</a>
-            </div>
-        </div>
-    </div>
-</div>
-
                         </li>
 
                     </ul>
@@ -161,99 +199,29 @@ if (!isset($_SESSION['log']) || $_SESSION['log'] !== 'Logged') {
 
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
+                <div class="form-container">
+    <div class="container mt-5">
+        <h2>Ubah Profil</h2>
+        <form action="" method="post">
+            <div class="form-group">
+                <label for="alamat">Alamat:</label>
+                <input type="text" id="alamat" name="alamat" class="form-control" 
+                    value="<?php echo htmlspecialchars($user['alamat']); ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="no_telp">No Telp:</label>
+                <input type="text" id="no_telp" name="no_telp" class="form-control"
+                    value="<?php echo htmlspecialchars($user['no_telp']); ?>" required>
+            </div>
+            <div class="form-group">
+    <label for="foto_profil">Foto Profil:</label>
+    <input type="file" id="foto_profil" name="foto_profil" class="form-control" accept="image/*">
+</div>
 
-                    <!-- Judul -->
-                    <div class="card1">
-                        <div class="card-body">
-                            Selamat Datang di CUTIAJA
-                        </div>
-                    </div>
-                    <h6 class="h6">
-                    Selamat datang, <?php echo htmlspecialchars($_SESSION['nama']); ?>!
-                    </h6>
-                    
-                    
-                    <a href="formulir.php" class="btn btn-primary p-2 text-white float-right"><i class="fas fa-plus mr-2"></i>Ajukan Cuti</a>
-
-                    <!-- Tabel -->
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                            <th scope="col">No</th>
-                            <th scope="col">Tanggal Diajukan</th>
-                            <th scope="col">Tanggal Mulai</th>
-                            <th scope="col">Tanggal Berakhir</th>
-                            <th scope="col">Jenis Cuti</th>
-                            <th scope="col">Jumlah Cuti</th>
-                            <th scope="col">Alasan</th>
-                            <th scope="col">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php include "../koneksi.php";
-
-// Periksa apakah pengguna sudah login
-if (!isset($_SESSION['id_user'])) {
-    echo "<tr><td colspan='100%'>Silakan login terlebih dahulu.</td></tr>";
-    exit();
-}
-
-// Query untuk mengambil data formulir berdasarkan id_user dan status Pending
-$sql = "SELECT * FROM formulir WHERE id_user = ? AND status = 'diproses'";
-$stmt = $koneksi->prepare($sql);
-$stmt->bind_param("i", $_SESSION['id_user']);
-$stmt->execute();
-$result = $stmt->get_result();
-
-// Periksa apakah data ditemukan
-if ($result->num_rows < 1) {
-    echo "<tr><td colspan='100%'>Tidak ada data yang ditemukan!</td></tr>";
-} else {
-    $no = 1;
-    while ($row = $result->fetch_assoc()) {
-        echo "<tr>
-                <td>{$no}</td>
-                <td>{$row['tanggal_diajukan']}</td>
-                <td>{$row['tanggal_mulai']}</td>
-                <td>{$row['tanggal_selesai']}</td>
-                <td>{$row['jenis_cuti']}</td>
-                <td>{$row['jumlah_cuti']}</td>
-                <td>{$row['alasan']}</td>
-                <td>{$row['status']}</td>
-            </tr>";
-        $no++;
-    }
-}
-
-// Tutup statement
-$stmt->close();
-?>
-
-                        </tbody>
-                        
-                        
-                    </table>
-
-                    
-                        
-
-    <!-- Bootstrap core JavaScript-->
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Core plugin JavaScript-->
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-
-    <!-- Custom scripts for all pages-->
-    <script src="js/sb-admin-2.min.js"></script>
-
-    <!-- Page level plugins -->
-    <script src="vendor/chart.js/Chart.min.js"></script>
-
-    <!-- Page level custom scripts -->
-    <script src="js/demo/chart-area-demo.js"></script>
-    <script src="js/demo/chart-pie-demo.js"></script>
-
+            <button type="submit" class="btn btn-primary text-white">Simpan</button>
+            <a href="profil.php" class="btn btn-secondary text-white">Batal</a>
+        </form>
+    </div>
 </body>
 
 </html>
